@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>초등 수학 단원 위계 거미줄 (1~6학년)</title>
+<style>
+  :root {
+    --bg: #FAFAF7;
+    --panel: #FFFFFF;
+    --border: #E5E3DB;
+    --text: #2C2C2A;
+    --text-sub: #5F5E5A;
+    --hover: #F1EFE8;
+    --accent: #534AB7;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  header {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  header h1 .badge {
+    font-size: 11px;
+    background: var(--accent);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  header p {
+    margin: 6px 0 0;
+    color: var(--text-sub);
+    font-size: 13px;
+  }
+
+  .controls {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 12px;
+  }
+  .area-filters {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .area-toggle {
+    padding: 6px 12px;
+    border-radius: 16px;
+    border: 1.5px solid;
+    background: transparent;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.15s;
+    user-select: none;
+    font-family: inherit;
+  }
+  .area-toggle.off {
+    opacity: 0.35;
+    background: transparent !important;
+  }
+  .control-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-sub);
+    font-size: 12px;
+  }
+  .control-group button {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text);
+    font-family: inherit;
+  }
+  .control-group button:hover { background: var(--hover); }
+  .control-group button.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+
+  main {
+    padding: 24px;
+    overflow-x: auto;
+  }
+  .canvas {
+    position: relative;
+    width: max-content;
+    min-width: 100%;
+  }
+  /* 격자 헤더 */
+  .grade-header {
+    display: grid;
+    grid-template-columns: 80px repeat(12, 140px);
+    gap: 6px;
+    padding-bottom: 8px;
+    margin-bottom: 4px;
+  }
+  .corner-cell { 
+    font-weight: 600; 
+    font-size: 12px; 
+    color: var(--text-sub); 
+    display: flex; 
+    align-items: flex-end; 
+    padding-bottom: 6px;
+  }
+  .grade-cell {
+    text-align: center;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 6px 0;
+    color: var(--text);
+    border-bottom: 2px solid var(--border);
+  }
+  .grade-cell.s2 {
+    border-bottom-style: dashed;
+  }
+
+  /* 단원 격자 */
+  .units-grid {
+    display: grid;
+    grid-template-columns: 80px repeat(12, 140px);
+    grid-template-rows: repeat(6, 86px);
+    gap: 6px;
+    position: relative;
+  }
+  .row-label {
+    font-size: 11px;
+    color: var(--text-sub);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 8px;
+  }
+  .unit {
+    border: 1.5px solid;
+    border-radius: 8px;
+    padding: 6px 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    background: var(--panel);
+    z-index: 2;
+  }
+  .unit:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    z-index: 5;
+  }
+  .unit.dim {
+    opacity: 0.2;
+  }
+  .unit.highlighted {
+    z-index: 6;
+    box-shadow: 0 0 0 3px rgba(83, 74, 183, 0.3);
+  }
+  .unit.selected {
+    z-index: 6;
+    box-shadow: 0 0 0 3px var(--accent);
+  }
+  .unit-code {
+    font-size: 10px;
+    color: var(--text-sub);
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+  .unit-name {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--text);
+  }
+  .unit-area-badge {
+    display: inline-block;
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-top: 4px;
+    font-weight: 500;
+  }
+
+  /* SVG 연결선 - 카드 위에 살짝 보이도록 z-index 3 */
+  #connections-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 3;
+    mix-blend-mode: multiply;
+  }
+  #connections-svg path {
+    fill: none;
+    stroke-width: 1.2;
+    transition: opacity 0.2s, stroke-width 0.2s;
+  }
+  #connections-svg path.dim { opacity: 0.06; }
+  #connections-svg path.highlighted { 
+    stroke-width: 2.5; 
+    opacity: 1;
+  }
+
+  /* 사이드 패널 */
+  .side-panel {
+    position: fixed;
+    top: 0;
+    right: -380px;
+    width: 360px;
+    height: 100vh;
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    box-shadow: -4px 0 16px rgba(0,0,0,0.08);
+    transition: right 0.25s;
+    overflow-y: auto;
+    z-index: 200;
+    padding: 24px;
+  }
+  .side-panel.open { right: 0; }
+  .side-panel .close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--text-sub);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+  }
+  .side-panel .close:hover { background: var(--hover); }
+  .side-panel h2 {
+    margin: 0 0 4px;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .side-panel .meta {
+    font-size: 12px;
+    color: var(--text-sub);
+    margin-bottom: 16px;
+  }
+  .side-panel h3 {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 20px 0 8px;
+    color: var(--text);
+  }
+  .side-panel ul {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 13px;
+    color: var(--text-sub);
+    line-height: 1.7;
+  }
+  .side-panel .link-list {
+    list-style: none;
+    padding: 0;
+  }
+  .side-panel .link-list li {
+    padding: 6px 10px;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    transition: background 0.15s;
+    color: var(--text);
+  }
+  .side-panel .link-list li:hover {
+    background: var(--hover);
+  }
+  .side-panel .link-list .small-code {
+    color: var(--text-sub);
+    font-size: 10px;
+    margin-right: 6px;
+  }
+  .side-panel .empty {
+    font-size: 12px;
+    color: var(--text-sub);
+    font-style: italic;
+  }
+
+  /* 범례 */
+  .legend {
+    margin-top: 24px;
+    padding: 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--text-sub);
+  }
+  .legend strong { color: var(--text); display: block; margin-bottom: 6px; }
+  .legend p { margin: 4px 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>초등 수학 단원 위계 거미줄 <span class="badge">1~6학년</span></h1>
+  <p>학기·단원 격자에 배치된 71개 단원을 110개의 선수–후속 관계로 연결한 거미줄. 단원을 클릭하면 거슬러 올라가는 학습 결손 경로와 이어지는 학습 갈래가 모두 강조됩니다.</p>
+  <div class="controls">
+    <div class="area-filters" id="area-filters"></div>
+    <div class="control-group">
+      <span>연결 표시:</span>
+      <button id="btn-conn-all" class="active">전체</button>
+      <button id="btn-conn-cross">학년 간만</button>
+      <button id="btn-conn-none">숨기기</button>
+    </div>
+    <div class="control-group">
+      <button id="btn-reset">선택 해제</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="canvas">
+    <div class="grade-header" id="grade-header"></div>
+    <div class="units-grid" id="units-grid">
+      <svg id="connections-svg" preserveAspectRatio="none"></svg>
+    </div>
+    <div class="legend">
+      <strong>읽는 법</strong>
+      <p>• 가로축 = 학년·학기 (1-1부터 6-2까지 12개 학기) · 세로축 = 단원 번호 (1~6)</p>
+      <p>• 단원 카드 색 = 5대 영역 (수와 연산 / 도형 / 측정 / 변화와 관계 / 자료와 가능성)</p>
+      <p>• 화살표 색 = 출발 단원의 영역 · 화살표 방향 = 선수→후속 학습 흐름</p>
+      <p>• 단원 클릭 시: 모든 선수 학습(빨간 강조)과 후속 학습(초록 강조)이 표시되며, 우측 패널에서 학습 내용을 확인할 수 있습니다.</p>
+    </div>
+  </div>
+</main>
+
+<aside class="side-panel" id="side-panel">
+  <button class="close" id="panel-close">×</button>
+  <div id="panel-content"></div>
+</aside>
+
+<script>
+const DATA = {"units":[{"id":"G1-1-1","g":1,"s":1,"n":1,"name":"9까지의 수","area":"N","topics":["9까지의 수를 알고 읽기·쓰기","9까지의 수의 순서","1만큼 더 큰 수, 1만큼 더 작은 수","0","크기 비교"],"pre":[],"next":["G1-1-3","G1-2-1","G1-1-5"]},{"id":"G1-1-2","g":1,"s":1,"n":2,"name":"여러 가지 모양","area":"G","topics":["모양 살펴보기·찾기·알아보기","모양으로 만들기"],"pre":[],"next":["G1-2-3"]},{"id":"G1-1-3","g":1,"s":1,"n":3,"name":"덧셈과 뺄셈","area":"N","topics":["9 이하의 수의 합성과 분해","한 자리 수 범위 덧셈·뺄셈","다양한 방법"],"pre":["G1-1-1"],"next":["G1-2-2"]},{"id":"G1-1-4","g":1,"s":1,"n":4,"name":"비교하기","area":"M","topics":["길이·무게·넓이·들이 직접 비교","두~세 가지 비교"],"pre":[],"next":["G1-2-3","G2-1-4","G3-2-4"]},{"id":"G1-1-5","g":1,"s":1,"n":5,"name":"50까지의 수","area":"N","topics":["수의 필요성","10","19까지의 수","50까지의 수","순서·크기 비교"],"pre":["G1-1-1"],"next":["G1-2-1"]},{"id":"G1-2-1","g":1,"s":2,"n":1,"name":"100까지의 수","area":"N","topics":["60·70·80·90 알기","100까지의 수","99보다 1 큰 수","순서·크기 비교","짝수와 홀수"],"pre":["G1-1-1","G1-1-5"],"next":["G2-1-1","G2-1-5"]},{"id":"G1-2-2","g":1,"s":2,"n":2,"name":"덧셈과 뺄셈(1)","area":"N","topics":["한 자리 수인 세 수의 덧셈·뺄셈","10이 되는 더하기·빼기","10을 이용한 세 수 덧셈"],"pre":["G1-1-3"],"next":["G1-2-4","G1-2-6"]},{"id":"G1-2-3","g":1,"s":2,"n":3,"name":"모양과 시각","area":"G","topics":["모양 찾기·알아보기","모양으로 만들기","시각의 쓰임","몇 시·몇 시 30분","생활 속 시각"],"pre":["G1-1-2","G1-1-4"],"next":["G2-1-2","G2-2-4"]},{"id":"G1-2-4","g":1,"s":2,"n":4,"name":"덧셈과 뺄셈(2)","area":"N","topics":["(몇)+(몇)=(십몇)","(십몇)-(몇)=(몇)","계산 원리","여러 가지 방법"],"pre":["G1-2-2"],"next":["G1-2-6","G2-1-6"]},{"id":"G1-2-5","g":1,"s":2,"n":5,"name":"규칙 찾기","area":"P","topics":["물체·무늬·수 배열에서 규칙","규칙 표현","자신의 규칙 만들기"],"pre":[],"next":["G2-2-6"]},{"id":"G1-2-6","g":1,"s":2,"n":6,"name":"덧셈과 뺄셈(3)","area":"N","topics":["받아올림 있는 두 자리 수의 덧셈","받아내림 있는 두 자리 수의 뺄셈"],"pre":["G1-2-2","G1-2-4"],"next":["G2-1-3"]},{"id":"G2-1-1","g":2,"s":1,"n":1,"name":"세 자리 수","area":"N","topics":["백·몇백","세 자리 수 쓰기·읽기","자릿값","크기 비교","수 감각"],"pre":["G1-2-1"],"next":["G2-2-1"]},{"id":"G2-1-2","g":2,"s":1,"n":2,"name":"여러 가지 도형","area":"G","topics":["원·삼각형·사각형","오각형·육각형","쌓기나무로 입체도형"],"pre":["G1-2-3"],"next":["G3-1-2","G3-2-2"]},{"id":"G2-1-3","g":2,"s":1,"n":3,"name":"덧셈과 뺄셈","area":"N","topics":["두 자리 수 받아올림·받아내림","세 수 덧셈·뺄셈","□가 사용된 식"],"pre":["G1-2-6"],"next":["G2-2-1","G3-1-1"]},{"id":"G2-1-4","g":2,"s":1,"n":4,"name":"길이 재기","area":"M","topics":["임의 단위 비교","1cm와 자","길이 덧셈·뺄셈","어림하기"],"pre":["G1-1-4"],"next":["G3-1-5","G2-2-3","G5-1-6"]},{"id":"G2-1-5","g":2,"s":1,"n":5,"name":"분류하기","area":"D","topics":["분류의 의미","정해진 기준","수 세기","분류 결과 말하기"],"pre":["G1-2-1"],"next":["G2-2-5"]},{"id":"G2-1-6","g":2,"s":1,"n":6,"name":"곱셈","area":"N","topics":["여러 가지 방법으로 세기","묶음으로 세기","곱셈의 의미","곱셈식"],"pre":["G1-2-4"],"next":["G2-2-2"]},{"id":"G2-2-1","g":2,"s":2,"n":1,"name":"네 자리 수","area":"N","topics":["천·몇천","네 자리 수 쓰기·읽기","자릿값","뛰어 세기","크기 비교"],"pre":["G2-1-1","G2-1-3"],"next":["G3-1-1","G4-1-1"]},{"id":"G2-2-2","g":2,"s":2,"n":2,"name":"곱셈구구","area":"N","topics":["2단~9단 곱셈구구","1단·0의 곱","곱셈표","곱셈구구 활용"],"pre":["G2-1-6"],"next":["G3-1-4","G3-2-1","G3-1-3"]},{"id":"G2-2-3","g":2,"s":2,"n":3,"name":"길이 재기","area":"M","topics":["1m·100cm","몇 m 몇 cm","길이 덧셈·뺄셈","어림","자 활용"],"pre":["G2-1-4"],"next":["G3-1-5"]},{"id":"G2-2-4","g":2,"s":2,"n":4,"name":"시각과 시간","area":"M","topics":["몇 시 몇 분","60분과 1시간","1일 24시간","달력 1주 7일"],"pre":["G1-2-3"],"next":["G3-1-5"]},{"id":"G2-2-5","g":2,"s":2,"n":5,"name":"표와 그래프","area":"D","topics":["자료 분류","표로 나타내기","그래프 편리한 점","조사·표·그래프"],"pre":["G2-1-5"],"next":["G3-2-6","G6-1-5"]},{"id":"G2-2-6","g":2,"s":2,"n":6,"name":"규칙 찾기","area":"P","topics":["무늬·쌓은 모양 규칙","덧셈표·곱셈표 규칙","생활 속 규칙"],"pre":["G1-2-5"],"next":["G4-2-3","G4-1-6"]},{"id":"G3-1-1","g":3,"s":1,"n":1,"name":"덧셈과 뺄셈","area":"N","topics":["받아올림·받아내림 있는 세 자리 수의 덧셈·뺄셈","어림셈"],"pre":["G2-1-3","G2-2-1"],"next":["G4-1-1"]},{"id":"G3-1-2","g":3,"s":1,"n":2,"name":"평면도형","area":"G","topics":["선분·반직선·직선","각·직각","직각삼각형·직사각형·정사각형"],"pre":["G2-1-2"],"next":["G3-2-2","G4-1-2","G4-1-4"]},{"id":"G3-1-3","g":3,"s":1,"n":3,"name":"나눗셈","area":"N","topics":["나눗셈식 알아보기","곱셈과 나눗셈 관계","곱셈구구로 나눗셈"],"pre":["G2-2-2"],"next":["G3-2-3"]},{"id":"G3-1-4","g":3,"s":1,"n":4,"name":"곱셈","area":"N","topics":["(몇십)×(몇)","올림 없는 (두자리)×(한자리)","올림 있는 (두자리)×(한자리)"],"pre":["G2-2-2"],"next":["G3-2-1"]},{"id":"G3-1-5","g":3,"s":1,"n":5,"name":"길이와 시간","area":"M","topics":["1mm와 1cm","1km와 1000m","길이 어림","초·시간 덧셈·뺄셈"],"pre":["G2-1-4","G2-2-3","G2-2-4"],"next":["G3-2-4","G5-2-1"]},{"id":"G3-1-6","g":3,"s":1,"n":6,"name":"분수와 소수","area":"N","topics":["등분할로 분수","전체와 부분의 관계","단위분수","분모 같은 분수 크기 비교","소수","소수 크기"],"pre":[],"next":["G3-2-5","G4-1-3","G4-2-3"]},{"id":"G3-2-1","g":3,"s":2,"n":1,"name":"곱셈","area":"N","topics":["(세자리)×(한자리)","(몇십)×(몇십)","(한자리)×(두자리)","(두자리)×(두자리)"],"pre":["G3-1-4","G2-2-2"],"next":["G4-1-1","G4-1-3"]},{"id":"G3-2-2","g":3,"s":2,"n":2,"name":"원","area":"G","topics":["원의 중심·반지름·지름","원의 성질","컴퍼스로 원 그리기"],"pre":["G2-1-2","G3-1-2"],"next":["G6-2-5"]},{"id":"G3-2-3","g":3,"s":2,"n":3,"name":"나눗셈","area":"N","topics":["(두자리)÷(한자리)","(세자리)÷(한자리)","나누어떨어짐/나머지","검산"],"pre":["G3-1-3"],"next":["G4-1-1","G4-2-1","G4-1-3"]},{"id":"G3-2-4","g":3,"s":2,"n":4,"name":"무게와 들이","area":"M","topics":["무게·들이 비교","kg·g·t","L·mL","측정·어림","덧셈·뺄셈"],"pre":["G1-1-4","G3-1-5"],"next":["G5-2-1"]},{"id":"G3-2-5","g":3,"s":2,"n":5,"name":"분수","area":"N","topics":["이산량 분수","진분수·가분수·대분수","대↔가분수 변환","분모 같은 분수 크기 비교"],"pre":["G3-1-6"],"next":["G4-1-3","G4-2-1","G5-1-4"]},{"id":"G3-2-6","g":3,"s":2,"n":6,"name":"그림그래프","area":"D","topics":["그림그래프 알아보기","그림그래프로 나타내기","자료 모아 표현·해석"],"pre":["G2-2-5"],"next":["G4-1-6","G4-1-5"]},{"id":"G4-1-1","g":4,"s":1,"n":1,"name":"큰 수","area":"N","topics":["10000","다섯·여섯 자리 수","십만·백만·천만","억·조","크기 비교"],"pre":["G2-2-1","G3-1-1","G3-2-1","G3-2-3"],"next":["G5-2-1"]},{"id":"G4-1-2","g":4,"s":1,"n":2,"name":"각도","area":"G","topics":["각의 크기 비교","각도(°)","예각·둔각","각도 어림·계산","삼각형/사각형 각의 합"],"pre":["G3-1-2"],"next":["G4-2-2","G4-2-4"]},{"id":"G4-1-3","g":4,"s":1,"n":3,"name":"곱셈과 나눗셈","area":"N","topics":["(세자리)×(두자리)","(두자리)÷(두자리)","(세자리)÷(두자리)","검산"],"pre":["G3-2-1","G3-2-3","G3-1-6","G3-2-5"],"next":["G5-1-1"]},{"id":"G4-1-4","g":4,"s":1,"n":4,"name":"평면도형의 이동","area":"G","topics":["평면도형 밀기·뒤집기·돌리기","물체/점의 이동"],"pre":["G3-1-2"],"next":["G4-2-2"]},{"id":"G4-1-5","g":4,"s":1,"n":5,"name":"막대그래프","area":"D","topics":["막대그래프의 의미","막대그래프로 나타내기","해석·활용"],"pre":["G3-2-6"],"next":["G4-2-5","G6-1-5"]},{"id":"G4-1-6","g":4,"s":1,"n":6,"name":"규칙 찾기","area":"P","topics":["수 배열·도형 배열의 규칙","계산식의 규칙","등호의 의미","식으로 나타내기"],"pre":["G2-2-6","G3-2-6"],"next":["G5-1-3"]},{"id":"G4-2-1","g":4,"s":2,"n":1,"name":"분수의 덧셈과 뺄셈","area":"N","topics":["진분수의 덧셈·뺄셈","자연수와 분수의 덧셈·뺄셈","대분수 덧셈·뺄셈"],"pre":["G3-2-3","G3-2-5"],"next":["G5-1-5"]},{"id":"G4-2-2","g":4,"s":2,"n":2,"name":"삼각형","area":"G","topics":["이등변·정삼각형","이등변/정삼각형 성질","예각·둔각삼각형","세 각의 합"],"pre":["G4-1-2","G4-1-4"],"next":["G4-2-4","G5-1-6"]},{"id":"G4-2-3","g":4,"s":2,"n":3,"name":"소수의 덧셈과 뺄셈","area":"N","topics":["소수 두/세 자리 수","소수 사이 관계","크기 비교","덧셈·뺄셈"],"pre":["G3-1-6","G2-2-6"],"next":["G5-2-1","G5-2-4"]},{"id":"G4-2-4","g":4,"s":2,"n":4,"name":"사각형","area":"G","topics":["수직·수선","평행과 평행선","사다리꼴·평행사변형·마름모","여러 가지 사각형"],"pre":["G4-1-2","G4-2-2"],"next":["G4-2-6","G5-2-5","G5-1-6"]},{"id":"G4-2-5","g":4,"s":2,"n":5,"name":"꺾은선그래프","area":"D","topics":["꺾은선그래프 알아보기","나타내기","해석·문제해결"],"pre":["G4-1-5"],"next":["G5-2-6","G6-1-5"]},{"id":"G4-2-6","g":4,"s":2,"n":6,"name":"다각형","area":"G","topics":["다각형·정다각형","대각선","여러 가지 모양 만들기"],"pre":["G4-2-4"],"next":["G5-2-3","G5-2-5"]},{"id":"G5-1-1","g":5,"s":1,"n":1,"name":"자연수의 혼합 계산","area":"N","topics":["덧셈·뺄셈 섞인 식","곱셈·나눗셈 섞인 식","( )가 있는 식","네 연산 혼합"],"pre":["G4-1-3"],"next":[]},{"id":"G5-1-2","g":5,"s":1,"n":2,"name":"약수와 배수","area":"N","topics":["약수·배수","약수와 배수의 관계","공약수·최대공약수","공배수·최소공배수"],"pre":[],"next":["G5-1-4"]},{"id":"G5-1-3","g":5,"s":1,"n":3,"name":"대응 관계","area":"P","topics":["양 변화 규칙","두 양 대응 관계","대응 관계를 □,△로","식으로 나타내기"],"pre":["G4-1-6"],"next":[]},{"id":"G5-1-4","g":5,"s":1,"n":4,"name":"약분과 통분","area":"N","topics":["크기 같은 분수","약분","통분","분모 다른 분수 크기 비교"],"pre":["G3-2-5","G5-1-2"],"next":["G5-1-5"]},{"id":"G5-1-5","g":5,"s":1,"n":5,"name":"분수의 덧셈과 뺄셈","area":"N","topics":["분모 다른 진분수의 덧셈·뺄셈","분모 다른 대분수의 덧셈·뺄셈"],"pre":["G4-2-1","G5-1-4"],"next":["G5-2-2","G6-1-1"]},{"id":"G5-1-6","g":5,"s":1,"n":6,"name":"다각형의 둘레와 넓이","area":"M","topics":["둘레","넓이 단위 cm²·m²·km²","직사각형·평행사변형·삼각형·마름모·사다리꼴 넓이"],"pre":["G2-1-4","G4-2-2","G4-2-4"],"next":["G5-2-5","G6-1-6","G6-2-5"]},{"id":"G5-2-1","g":5,"s":2,"n":1,"name":"수의 범위와 어림하기","area":"N","topics":["이상·이하·초과·미만","수의 범위 수직선","올림·버림·반올림","어림 활용"],"pre":["G3-1-5","G3-2-4","G4-1-1","G4-2-3"],"next":["G6-2-2"]},{"id":"G5-2-2","g":5,"s":2,"n":2,"name":"분수의 곱셈","area":"N","topics":["(분수)×(자연수)","(자연수)×(분수)","(진분수)×(진분수)","(대분수)×(대분수)"],"pre":["G5-1-5"],"next":["G6-1-1","G6-1-3","G5-2-4"]},{"id":"G5-2-3","g":5,"s":2,"n":3,"name":"합동과 대칭","area":"G","topics":["합동인 도형","대응변·대응각","선대칭도형","점대칭도형"],"pre":["G4-2-6"],"next":["G5-2-5","G6-1-2"]},{"id":"G5-2-4","g":5,"s":2,"n":4,"name":"소수의 곱셈","area":"N","topics":["(소수)×(자연수)","(자연수)×(소수)","(소수)×(소수)","소수점 위치"],"pre":["G4-2-3","G5-2-2"],"next":["G6-1-3","G6-2-2"]},{"id":"G5-2-5","g":5,"s":2,"n":5,"name":"직육면체","area":"G","topics":["직육면체·정육면체","면·모서리·꼭짓점","겨냥도","전개도"],"pre":["G4-2-4","G4-2-6","G5-1-6","G5-2-3"],"next":["G6-1-2","G6-1-6","G6-2-6"]},{"id":"G5-2-6","g":5,"s":2,"n":6,"name":"평균과 가능성","area":"D","topics":["평균의 의미·구하기","평균 비교·문제해결","일이 일어날 가능성","분수·말로 표현"],"pre":["G4-2-5"],"next":["G6-1-4","G6-2-6"]},{"id":"G6-1-1","g":6,"s":1,"n":1,"name":"분수의 나눗셈","area":"N","topics":["(자연수)÷(자연수) 몫을 분수로","(분수)÷(자연수)","분수의 나눗셈 활용"],"pre":["G5-1-5","G5-2-2"],"next":["G6-2-1"]},{"id":"G6-1-2","g":6,"s":1,"n":2,"name":"각기둥과 각뿔","area":"G","topics":["각기둥·각뿔","구성 요소·성질","전개도"],"pre":["G5-2-3","G5-2-5"],"next":["G6-2-3","G6-2-6"]},{"id":"G6-1-3","g":6,"s":1,"n":3,"name":"소수의 나눗셈","area":"N","topics":["(소수)÷(자연수) 자릿수 같음·다름","몫의 소수점","(자연수)÷(자연수) 몫을 소수로"],"pre":["G5-2-2","G5-2-4"],"next":["G6-2-2"]},{"id":"G6-1-4","g":6,"s":1,"n":4,"name":"비와 비율","area":"P","topics":["두 양의 비","비","비율을 분수·소수로","비율 활용","백분율"],"pre":["G5-2-6"],"next":["G6-2-4","G6-1-5"]},{"id":"G6-1-5","g":6,"s":1,"n":5,"name":"자료와 여러 가지 그래프","area":"D","topics":["띠그래프·원그래프","자료 정리·해석","여러 그래프 비교"],"pre":["G2-2-5","G4-1-5","G4-2-5","G6-1-4"],"next":[]},{"id":"G6-1-6","g":6,"s":1,"n":6,"name":"직육면체의 겉넓이와 부피","area":"M","topics":["직육면체 겉넓이","부피 단위 cm³·m³","직육면체·정육면체 부피"],"pre":["G5-1-6","G5-2-5"],"next":["G6-2-6"]},{"id":"G6-2-1","g":6,"s":2,"n":1,"name":"분수의 나눗셈","area":"N","topics":["분모 같은 (분수)÷(분수)","(자연수)÷(분수)","분모 다른 (분수)÷(분수)"],"pre":["G6-1-1"],"next":[]},{"id":"G6-2-2","g":6,"s":2,"n":2,"name":"소수의 나눗셈","area":"N","topics":["(소수)÷(소수)","(자연수)÷(소수)","몫 반올림","나머지 알기"],"pre":["G5-2-1","G5-2-4","G6-1-3"],"next":[]},{"id":"G6-2-3","g":6,"s":2,"n":3,"name":"공간과 입체","area":"G","topics":["여러 방향에서 본 모양","쌓은 모양 위·앞·옆","쌓기나무 개수","여러 가지 모양 만들기"],"pre":["G6-1-2"],"next":[]},{"id":"G6-2-4","g":6,"s":2,"n":4,"name":"비례식과 비례배분","area":"P","topics":["비의 성질","간단한 자연수 비","비례식","비례배분"],"pre":["G6-1-4"],"next":[]},{"id":"G6-2-5","g":6,"s":2,"n":5,"name":"원의 넓이","area":"M","topics":["원주율","원주·지름 구하기","원의 넓이"],"pre":["G3-2-2","G5-1-6"],"next":[]},{"id":"G6-2-6","g":6,"s":2,"n":6,"name":"원기둥·원뿔·구","area":"G","topics":["원기둥의 구성 요소·성질","원기둥의 전개도","원뿔·구"],"pre":["G5-2-5","G6-1-2","G6-1-6","G5-2-6"],"next":[]}],"areas":{"N":{"name":"수와 연산","color":"#7F77DD","bg":"#EEEDFE","dark":"#3C3489"},"G":{"name":"도형","color":"#1D9E75","bg":"#E1F5EE","dark":"#085041"},"M":{"name":"측정","color":"#EF9F27","bg":"#FAEEDA","dark":"#633806"},"P":{"name":"변화와 관계","color":"#D85A30","bg":"#FAECE7","dark":"#712B13"},"D":{"name":"자료와 가능성","color":"#D4537E","bg":"#FBEAF0","dark":"#72243E"}}};
+const UNITS = DATA.units;
+const AREAS = DATA.areas;
+const UMAP = Object.fromEntries(UNITS.map(u => [u.id, u]));
+
+// 학기 순서 (가로축)
+const SEMESTERS = [];
+for (let g = 1; g <= 6; g++) {
+  for (let s = 1; s <= 2; s++) SEMESTERS.push({ g, s, label: `${g}-${s}` });
+}
+const SEM_COL = Object.fromEntries(SEMESTERS.map((s, i) => [`${s.g}-${s.s}`, i + 1]));
+
+// ============ 헤더 생성 ============
+const gh = document.getElementById('grade-header');
+gh.innerHTML = '<div class="corner-cell">단원\\학기</div>' +
+  SEMESTERS.map(s => `<div class="grade-cell ${s.s===2?'s2':''}">${s.g}-${s.s}</div>`).join('');
+
+// ============ 영역 필터 생성 ============
+const af = document.getElementById('area-filters');
+const areaState = { N: true, G: true, M: true, P: true, D: true };
+af.innerHTML = Object.entries(AREAS).map(([code, a]) =>
+  `<button class="area-toggle" data-area="${code}" style="border-color:${a.color};color:${a.dark};background:${a.bg}">${a.name}</button>`
+).join('');
+
+// ============ 단원 격자 생성 ============
+const grid = document.getElementById('units-grid');
+const svg = document.getElementById('connections-svg');
+
+// 행 레이블
+for (let r = 1; r <= 6; r++) {
+  const div = document.createElement('div');
+  div.className = 'row-label';
+  div.style.gridRow = r;
+  div.style.gridColumn = 1;
+  div.textContent = `${r}단원`;
+  grid.appendChild(div);
+}
+
+// 단원 카드들
+const unitEls = {};
+for (const u of UNITS) {
+  const div = document.createElement('div');
+  div.className = `unit area-${u.area}`;
+  div.dataset.id = u.id;
+  div.dataset.area = u.area;
+  div.style.gridRow = u.n;
+  div.style.gridColumn = SEM_COL[`${u.g}-${u.s}`] + 1; // +1 for row label
+  div.style.borderColor = AREAS[u.area].color;
+  div.style.background = AREAS[u.area].bg;
+  div.innerHTML = `
+    <div class="unit-code">${u.g}-${u.s} · ${u.n}단원</div>
+    <div class="unit-name" style="color:${AREAS[u.area].dark}">${u.name}</div>
+  `;
+  div.addEventListener('click', () => selectUnit(u.id));
+  div.addEventListener('mouseenter', () => hoverUnit(u.id));
+  div.addEventListener('mouseleave', () => hoverUnit(null));
+  grid.appendChild(div);
+  unitEls[u.id] = div;
+}
+
+// ============ SVG 연결선 그리기 ============
+let pathEls = [];
+function drawConnections() {
+  // grid 크기 재측정
+  const gridRect = grid.getBoundingClientRect();
+  svg.setAttribute('viewBox', `0 0 ${gridRect.width} ${gridRect.height}`);
+  svg.setAttribute('width', gridRect.width);
+  svg.setAttribute('height', gridRect.height);
+  // 기존 path 제거 (SVG 내부)
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+  // 화살표 마커 정의
+  const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+  for (const [code, a] of Object.entries(AREAS)) {
+    const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+    marker.setAttribute('id', `arr-${code}`);
+    marker.setAttribute('viewBox', '0 0 10 10');
+    marker.setAttribute('refX', '8');
+    marker.setAttribute('refY', '5');
+    marker.setAttribute('markerWidth', '5');
+    marker.setAttribute('markerHeight', '5');
+    marker.setAttribute('orient', 'auto-start-reverse');
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', 'M2 1 L8 5 L2 9');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', a.color);
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    marker.appendChild(path);
+    defs.appendChild(marker);
+  }
+  svg.appendChild(defs);
+
+  pathEls = [];
+  for (const u of UNITS) {
+    const srcEl = unitEls[u.id];
+    const srcRect = srcEl.getBoundingClientRect();
+    const sx = srcRect.left - gridRect.left + srcRect.width;
+    const sy = srcRect.top - gridRect.top + srcRect.height / 2;
+    for (const nid of u.next) {
+      const dstEl = unitEls[nid];
+      if (!dstEl) continue;
+      const dstRect = dstEl.getBoundingClientRect();
+      const dx = dstRect.left - gridRect.left;
+      const dy = dstRect.top - gridRect.top + dstRect.height / 2;
+      // 베지에 곡선 (수평 거리에 비례한 컨트롤 포인트)
+      const dxAbs = Math.abs(dx - sx);
+      const c = Math.min(80, dxAbs * 0.4);
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      const d = `M ${sx} ${sy} C ${sx + c} ${sy}, ${dx - c} ${dy}, ${dx} ${dy}`;
+      path.setAttribute('d', d);
+      path.setAttribute('stroke', AREAS[u.area].color);
+      path.setAttribute('stroke-opacity', '0.45');
+      path.setAttribute('marker-end', `url(#arr-${u.area})`);
+      path.dataset.from = u.id;
+      path.dataset.to = nid;
+      path.dataset.area = u.area;
+      // 학년 간 / 학년 내 구분
+      path.dataset.cross = (u.g !== UMAP[nid].g) ? '1' : '0';
+      svg.appendChild(path);
+      pathEls.push(path);
+    }
+  }
+}
+
+// ============ 인터랙션 ============
+let selectedId = null;
+let connMode = 'all'; // all | cross | none
+
+function getAncestors(id, set = new Set()) {
+  const u = UMAP[id]; if (!u) return set;
+  for (const p of u.pre) { if (!set.has(p)) { set.add(p); getAncestors(p, set); } }
+  return set;
+}
+function getDescendants(id, set = new Set()) {
+  const u = UMAP[id]; if (!u) return set;
+  for (const n of u.next) { if (!set.has(n)) { set.add(n); getDescendants(n, set); } }
+  return set;
+}
+
+function clearHighlights() {
+  for (const el of Object.values(unitEls)) {
+    el.classList.remove('dim','highlighted','selected');
+    el.style.removeProperty('box-shadow');
+    el.style.removeProperty('border-width');
+  }
+  for (const p of pathEls) {
+    p.classList.remove('dim','highlighted');
+    p.setAttribute('stroke-opacity', '0.45');
+  }
+}
+
+function applyAreaFilter() {
+  for (const u of UNITS) {
+    const el = unitEls[u.id];
+    if (areaState[u.area]) el.style.display = '';
+    else el.style.display = 'none';
+  }
+  // 연결선도 양 끝이 모두 보이는 것만 표시
+  for (const p of pathEls) {
+    const fromArea = UMAP[p.dataset.from].area;
+    const toArea = UMAP[p.dataset.to].area;
+    const visible = areaState[fromArea] && areaState[toArea];
+    p.style.display = visible ? '' : 'none';
+  }
+  applyConnMode();
+}
+
+function applyConnMode() {
+  for (const p of pathEls) {
+    if (p.style.display === 'none') continue;
+    if (connMode === 'none') {
+      p.style.visibility = 'hidden';
+    } else if (connMode === 'cross') {
+      p.style.visibility = (p.dataset.cross === '1') ? '' : 'hidden';
+    } else {
+      p.style.visibility = '';
+    }
+  }
+}
+
+function selectUnit(id) {
+  selectedId = id;
+  clearHighlights();
+  const ancestors = getAncestors(id);
+  const descendants = getDescendants(id);
+  const related = new Set([id, ...ancestors, ...descendants]);
+  for (const u of UNITS) {
+    const el = unitEls[u.id];
+    if (u.id === id) {
+      el.classList.add('selected');
+    } else if (related.has(u.id)) {
+      el.classList.add('highlighted');
+      // 선수/후속 색깔 다르게
+      if (ancestors.has(u.id)) {
+        el.style.boxShadow = '0 0 0 2.5px #993C1D';
+      } else {
+        el.style.boxShadow = '0 0 0 2.5px #0F6E56';
+      }
+    } else {
+      el.classList.add('dim');
+    }
+  }
+  for (const p of pathEls) {
+    if (related.has(p.dataset.from) && related.has(p.dataset.to)) {
+      p.classList.add('highlighted');
+      p.setAttribute('stroke-opacity', '0.85');
+    } else {
+      p.classList.add('dim');
+      p.setAttribute('stroke-opacity', '0.05');
+    }
+  }
+  showPanel(id);
+}
+
+function hoverUnit(id) {
+  // 선택된 게 있으면 호버 무시
+  if (selectedId) return;
+  if (!id) { clearHighlights(); return; }
+  clearHighlights();
+  const ancestors = getAncestors(id);
+  const descendants = getDescendants(id);
+  const related = new Set([id, ...ancestors, ...descendants]);
+  for (const u of UNITS) {
+    const el = unitEls[u.id];
+    if (u.id === id) {
+      el.classList.add('selected');
+    } else if (related.has(u.id)) {
+      el.classList.add('highlighted');
+    } else {
+      el.classList.add('dim');
+    }
+  }
+  for (const p of pathEls) {
+    if (related.has(p.dataset.from) && related.has(p.dataset.to)) {
+      p.classList.add('highlighted');
+      p.setAttribute('stroke-opacity', '0.85');
+    } else {
+      p.classList.add('dim');
+      p.setAttribute('stroke-opacity', '0.05');
+    }
+  }
+}
+
+function showPanel(id) {
+  const u = UMAP[id];
+  const panel = document.getElementById('side-panel');
+  const content = document.getElementById('panel-content');
+  const area = AREAS[u.area];
+  const preItems = u.pre.length ? u.pre.map(pid => {
+    const p = UMAP[pid];
+    return `<li onclick="selectUnit('${pid}')"><span class="small-code">${p.g}-${p.s}-${p.n}</span>${p.name}</li>`;
+  }).join('') : '<li class="empty">없음 (출발 단원)</li>';
+  const nextItems = u.next.length ? u.next.map(nid => {
+    const n = UMAP[nid];
+    return `<li onclick="selectUnit('${nid}')"><span class="small-code">${n.g}-${n.s}-${n.n}</span>${n.name}</li>`;
+  }).join('') : '<li class="empty">없음 (도착 단원)</li>';
+
+  content.innerHTML = `
+    <div style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;background:${area.bg};color:${area.dark};margin-bottom:8px">${area.name}</div>
+    <h2 style="color:${area.dark}">${u.name}</h2>
+    <div class="meta">${u.g}학년 ${u.s}학기 · ${u.n}단원 · <code>${u.id}</code></div>
+    <h3>학습 내용</h3>
+    <ul>${u.topics.map(t => `<li>${t}</li>`).join('')}</ul>
+    <h3>선수 학습 (이 단원을 배우려면 필요)</h3>
+    <ul class="link-list">${preItems}</ul>
+    <h3>후속 학습 (이 단원이 발전되는 곳)</h3>
+    <ul class="link-list">${nextItems}</ul>
+  `;
+  panel.classList.add('open');
+}
+
+// ============ 이벤트 바인딩 ============
+document.querySelectorAll('.area-toggle').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const area = btn.dataset.area;
+    areaState[area] = !areaState[area];
+    btn.classList.toggle('off', !areaState[area]);
+    applyAreaFilter();
+  });
+});
+
+document.getElementById('btn-conn-all').addEventListener('click', () => {
+  connMode = 'all';
+  document.querySelectorAll('.controls button').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-conn-all').classList.add('active');
+  applyConnMode();
+});
+document.getElementById('btn-conn-cross').addEventListener('click', () => {
+  connMode = 'cross';
+  document.querySelectorAll('.controls button').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-conn-cross').classList.add('active');
+  applyConnMode();
+});
+document.getElementById('btn-conn-none').addEventListener('click', () => {
+  connMode = 'none';
+  document.querySelectorAll('.controls button').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-conn-none').classList.add('active');
+  applyConnMode();
+});
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  selectedId = null;
+  clearHighlights();
+  document.getElementById('side-panel').classList.remove('open');
+});
+
+document.getElementById('panel-close').addEventListener('click', () => {
+  document.getElementById('side-panel').classList.remove('open');
+  selectedId = null;
+  clearHighlights();
+});
+
+// 전역으로 노출 (사이드 패널 내 클릭용)
+window.selectUnit = selectUnit;
+
+// 초기 그리기
+window.addEventListener('load', () => {
+  setTimeout(drawConnections, 50);
+});
+window.addEventListener('resize', () => {
+  setTimeout(drawConnections, 50);
+});
+</script>
+
+</body>
+</html>
